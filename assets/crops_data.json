@@ -1,0 +1,117 @@
+[
+    {
+        "id": "mandua_001",
+        "crop_name": "Finger Millet (Mandua)",
+        "local_name": "Mandua / Ragi (मंडुआ)",
+        "scientific_name": "Eleusine coracana",
+        "season": "Kharif (June-July sowing)",
+        "climate": "Hardy crop, grows well in rainfed hills upto 2000m altitude.",
+        "soil": "Average fertility, well-drained sandy loam to clay loam.",
+        "sowing_method": "Direct sowing or Transplanting (3-4 week old seedlings).",
+        "varieties": [
+            "VL Mandua-352",
+            "VL Mandua-376",
+            "PRM-1"
+        ],
+        "fertilizer": "Compost 10t/ha, N:P:K 40:20:0 kg/ha.",
+        "diseases": [
+            "Blast",
+            "Cercospora Leaf Spot"
+        ],
+        "harvesting": "September-October when cooling starts. Duration 105-120 days.",
+        "yield": "20-25 quintal/hectare.",
+        "content": "Mandua is the main staple food crop of Uttarakhand hills. It is rich in Calcium and Iron. It is highly drought tolerant. For organic farming, use vermicompost. Rotate with Soya or Urd."
+    },
+    {
+        "id": "jhangora_002",
+        "crop_name": "Barnyard Millet (Jhangora)",
+        "local_name": "Jhangora (झंगोरा)",
+        "scientific_name": "Echinochloa frumentacea",
+        "season": "Kharif (Rainfed)",
+        "climate": "Lower and mid-hills, extremely hardy.",
+        "soil": "Marginal rocky soils/poor fertility soils.",
+        "sowing_method": "Broadcasting or Line Sowing (25 cm apart).",
+        "varieties": [
+            "VL Madira-172",
+            "VL Madira-207"
+        ],
+        "fertilizer": "FYM 5-10t/ha, Low requirement.",
+        "diseases": [
+            "Smut",
+            "Rust"
+        ],
+        "harvesting": "September end. Duration 90-100 days.",
+        "yield": "15-18 quintal/hectare.",
+        "content": "Jhangora is the fastest growing millet, suitable for fragile ecosystems. It has low glycemic index, good for diabetics. Often intercropped with Mandua or Pulses."
+    },
+    {
+        "id": "tomato_003",
+        "crop_name": "Tomato",
+        "local_name": "Tamatar (टमाटर)",
+        "scientific_name": "Solanum lycopersicum",
+        "season": "Summer (High Hills), Rabi/Kharif (Plains)",
+        "climate": "Warm season crop, frost sensitive.",
+        "soil": "Sandy loam with good drainage and high organic matter. pH 6.0-7.0.",
+        "sowing_method": "Nursery raising then transplanting.",
+        "varieties": [
+            "Pusa Ruby",
+            "Arka Rakshak",
+            "Him Sona"
+        ],
+        "fertilizer": "N:P:K 100:60:60 kg/ha + 20t FYM.",
+        "diseases": [
+            "Early Blight",
+            "Late Blight",
+            "Bacterial Wilt"
+        ],
+        "harvesting": "60-70 days after transplanting.",
+        "yield": "400-600 quintal/hectare (Hybrids).",
+        "content": "Tomato is widely grown in Uttarakhand polyhouses. Staking is required for indeterminate varieties. Major pest is Fruit Borer. Use pheromone traps."
+    },
+    {
+        "id": "apple_004",
+        "crop_name": "Apple",
+        "local_name": "Seb (सेब)",
+        "scientific_name": "Malus domestica",
+        "season": "Perennial (Harvest Aug-Oct)",
+        "climate": "Temperate, requires chilling hours (1000-1500 hrs). Zones 1500-2500m.",
+        "soil": "Deep loamy soil rich in organic matter.",
+        "sowing_method": "Grafting on rootstocks.",
+        "varieties": [
+            "Royal Delicious",
+            "Red Delicious",
+            "Golden Delicious"
+        ],
+        "fertilizer": "Age based. Adult tree: 700g N, 350g P, 700g K per year.",
+        "diseases": [
+            "Apple Scab",
+            "Powdery Mildew",
+            "Root Rot"
+        ],
+        "harvesting": "July to October depending on altitude.",
+        "yield": "8-12 tonnes/hectare.",
+        "content": "Uttarakhand 'Seb Production' is centered in Harsil, Mukteshwar. Pruning is done in Dec-Jan. Pollinizer varieties (Goldens) are essential (20-30%) for fruit set."
+    },
+    {
+        "id": "gahat_005",
+        "crop_name": "Horse Gram (Gahat)",
+        "local_name": "Gahat / Kulthi (गहत)",
+        "scientific_name": "Macrotyloma uniflorum",
+        "season": "Kharif (Late sowing Aug)",
+        "climate": "Dry, warm. Drought champion.",
+        "soil": "Poor gravelly soils.",
+        "sowing_method": "Broadcasting.",
+        "varieties": [
+            "VLG-1",
+            "VLG-8"
+        ],
+        "fertilizer": "Minimal. 10-20kg N start up.",
+        "diseases": [
+            "Root Rot",
+            "Yellow Mosaic"
+        ],
+        "harvesting": "November-December.",
+        "yield": "8-10 quintal/hectare.",
+        "content": "Gahat is famous in Uttarakhand for treating kidney stones (pathri). It improves soil nitrogen. Grown on residual moisture."
+    }
+]

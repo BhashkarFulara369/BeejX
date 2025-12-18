@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "604019663936",
+    "project_id": "beejx-a6af9",
+    "storage_bucket": "beejx-a6af9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604019663936:android:3ef69a298c45a4b7fa6ba5",
+        "android_client_info": {
+          "package_name": "com.beejx.agri"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "604019663936-oh99oshutckntqra7j531vgu1nsu5ol5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beejx.agri",
+            "certificate_hash": "58d3a716df2638b4696b9694154c305df7e18b16"
+          }
+        },
+        {
+          "client_id": "604019663936-vt5oe3rre49b76higouk2dejkee26q88.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beejx.agri",
+            "certificate_hash": "112f541131f6d31965833fdf39505fe401fa30bf"
+          }
+        },
+        {
+          "client_id": "604019663936-tp9ha262dpqc9ca2m8dt7n06jn1hfl5k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUHISyG1WrCpiYMb3veqyG31z1si0vJZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "604019663936-tp9ha262dpqc9ca2m8dt7n06jn1hfl5k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

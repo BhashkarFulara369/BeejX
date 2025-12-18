@@ -1,0 +1,160 @@
+{
+    "Uttarakhand": {
+        "Dehradun": {
+            "soil_type": "Forest Soil / Mountain Soil",
+            "soil_type_hi": "वन मृदा / पर्वतीय मृदा",
+            "description": "Rich in organic matter, suitable for horticulture.",
+            "description_hi": "जैविक पदार्थों से भरपूर, बागवानी के लिए उपयुक्त।",
+            "ph": "6.5",
+            "nitrogen": "1.20",
+            "organic_carbon": "2.50",
+            "bulk_density": "1.10",
+            "texture": {
+                "clay": "25.0",
+                "sand": "40.0",
+                "silt": "35.0"
+            },
+            "recommended_crops": [
+                "Basmati Rice",
+                "Wheat",
+                "Litchi",
+                "Mango"
+            ],
+            "recommended_crops_hi": [
+                "बासमती चावल",
+                "गेहूं",
+                "लीची",
+                "आम"
+            ],
+            "schemes": [
+                "Paramparagat Krishi Vikas Yojana"
+            ]
+        },
+        "Nainital": {
+            "soil_type": "Loamy Soil",
+            "soil_type_hi": "दोमट मिट्टी",
+            "description": "Fertile and well-drained.",
+            "description_hi": "उपजाऊ और अच्छी जल निकासी वाली।",
+            "ph": "6.8",
+            "nitrogen": "1.10",
+            "organic_carbon": "1.80",
+            "bulk_density": "1.25",
+            "texture": {
+                "clay": "20.0",
+                "sand": "40.0",
+                "silt": "40.0"
+            },
+            "recommended_crops": [
+                "Apple",
+                "Peach",
+                "Potato",
+                "Mandua (Finger Millet)"
+            ],
+            "recommended_crops_hi": [
+                "सेब",
+                "आड़ू",
+                "आलू",
+                "मंडुआ (रागी)"
+            ],
+            "schemes": [
+                "Apple Mission"
+            ]
+        }
+    },
+    "Punjab": {
+        "Ludhiana": {
+            "soil_type": "Alluvial Soil",
+            "soil_type_hi": "जलोढ़ मिट्टी",
+            "description": "Highly fertile, rich in potash but poor in nitrogen.",
+            "description_hi": "अत्यधिक उपजाऊ, पोटाश से भरपूर लेकिन नाइट्रोजन की कमी।",
+            "ph": "7.5",
+            "nitrogen": "0.80",
+            "organic_carbon": "1.20",
+            "bulk_density": "1.40",
+            "texture": {
+                "clay": "30.0",
+                "sand": "30.0",
+                "silt": "40.0"
+            },
+            "recommended_crops": [
+                "Wheat",
+                "Rice",
+                "Maize",
+                "Sugarcane"
+            ],
+            "recommended_crops_hi": [
+                "गेहूं",
+                "चावल",
+                "मक्का",
+                "गन्ना"
+            ],
+            "schemes": [
+                "Crop Diversification Program"
+            ]
+        }
+    },
+    "Maharashtra": {
+        "Nagpur": {
+            "soil_type": "Black Cotton Soil (Regur)",
+            "soil_type_hi": "काली कपास मिट्टी (रेगुर)",
+            "description": "High clay content, retains moisture well.",
+            "description_hi": "उच्च मिट्टी की मात्रा, नमी को अच्छी तरह से बरकरार रखती है।",
+            "ph": "7.8",
+            "nitrogen": "0.90",
+            "organic_carbon": "1.50",
+            "bulk_density": "1.35",
+            "texture": {
+                "clay": "55.0",
+                "sand": "20.0",
+                "silt": "25.0"
+            },
+            "recommended_crops": [
+                "Cotton",
+                "Soybean",
+                "Orange",
+                "Sorghum"
+            ],
+            "recommended_crops_hi": [
+                "कपास",
+                " सोयाबीन",
+                "संतरा",
+                "ज्वार"
+            ],
+            "schemes": [
+                "Project on Climate Resilient Agriculture (PoCRA)"
+            ]
+        }
+    },
+    "Uttar Pradesh": {
+        "Varanasi": {
+            "soil_type": "Alluvial Soil",
+            "soil_type_hi": "जलोढ़ मिट्टी",
+            "description": "Deep and fertile soil deposited by rivers.",
+            "description_hi": "नदियों द्वारा जमा की गई गहरी और उपजाऊ मिट्टी।",
+            "ph": "7.2",
+            "nitrogen": "0.95",
+            "organic_carbon": "1.10",
+            "bulk_density": "1.45",
+            "texture": {
+                "clay": "25.0",
+                "sand": "45.0",
+                "silt": "30.0"
+            },
+            "recommended_crops": [
+                "Rice",
+                "Wheat",
+                "Vegetables",
+                "Mustard"
+            ],
+            "recommended_crops_hi": [
+                "चावल",
+                "गेहूं",
+                "सब्जियां",
+                "सरसों"
+            ],
+            "schemes": [
+                "UP Agriculture Policy"
+            ]
+        }
+    }
+}
