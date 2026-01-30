@@ -1,7 +1,7 @@
 {
     "Uttarakhand": {
         "Dehradun": {
-            "soil_type": "Forest Soil / Mountain Soil",
+            "soil_type": "Mountain Soil",
             "soil_type_hi": "वन मृदा / पर्वतीय मृदा",
             "description": "Rich in organic matter, suitable for horticulture.",
             "description_hi": "जैविक पदार्थों से भरपूर, बागवानी के लिए उपयुक्त।",
@@ -13,22 +13,7 @@
                 "clay": "25.0",
                 "sand": "40.0",
                 "silt": "35.0"
-            },
-            "recommended_crops": [
-                "Basmati Rice",
-                "Wheat",
-                "Litchi",
-                "Mango"
-            ],
-            "recommended_crops_hi": [
-                "बासमती चावल",
-                "गेहूं",
-                "लीची",
-                "आम"
-            ],
-            "schemes": [
-                "Paramparagat Krishi Vikas Yojana"
-            ]
+            }
         },
         "Nainital": {
             "soil_type": "Loamy Soil",

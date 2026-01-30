@@ -32,7 +32,7 @@ class LLMService {
          
          // 2. Init Llama
          final gpath = await _modelManager.getGemmaPath();
-         _llama = Llama(gpath, ModelParams()); // Corrected to ModelParams
+         _llama = Llama(gpath, modelParams: ModelParams()); // Corrected to named param
          // Note: Llama usually initializes lazily or via constructor.
          
          _isOfflineModelReady = true;
@@ -98,7 +98,8 @@ class LLMService {
         responseText = await _callCloudBackend(prompt, chatId);
       } catch (e) {
         print("Online Failed: $e");
-        responseText = "Network Error. Please check internet or switch to Offline Mode.";
+        // DEBUG: Returning actual error to helping debugging on device
+        responseText = "Error: $e";
       }
     }
 
@@ -121,52 +122,48 @@ class LLMService {
       return await _offlineRag.search(prompt);
   }
 
+
+
   Future<String> _callCloudBackend(String prompt, String? chatId) async {
         final position = await _getCurrentLocation();
-        final locationData = position != null 
-            ? {"lat": position.latitude, "lon": position.longitude} 
-            : {};
-            
-        final soilData = await _soilService.getSoilInfo();
-        // Mock Weather for speed, or await real service
-        final weatherData = {"temp": "28°C", "condition": "Sunny"}; 
-
-        final String kBackendUrl = ApiConstants.chatEndpoint; 
         
-        // History Logic (Simplified)
-        List<Map<String, dynamic>> history = [];
-        if (chatId != null) {
-          final dbHelper = DatabaseHelper();
-          final rawMessages = await dbHelper.getMessages(chatId);
-          history = rawMessages.map((m) {
-            return {
-              'role': m['role'] == 'user' ? 'user' : 'model',
-              'content': m['text'] ?? ''
-            };
-          }).toList();
+        // Gather Context
+        Map<String, dynamic>? soilData = await _soilService.getSoilInfo();
+        
+        // Fallback for Soil if null (Network/Location failure)
+        if (soilData == null || soilData.isEmpty) {
+           soilData = {
+             "location": "Dehradun, Uttarakhand (Default)",
+             "soil_type": "Clay Loam", 
+             "ph": "6.5",
+             "nitrogen": "Low-Medium"
+           };
         }
-
-        final url = Uri.parse(kBackendUrl);
-        final request = http.Request('POST', url);
-        request.headers.addAll({"Content-Type": "application/json"});
-        request.body = jsonEncode({
-          "message": prompt, 
-          "history": history, 
-          "location": locationData,
-          "context": {
-            "soil": soilData ?? {},
-            "weather": weatherData,
-            "crops": "Wheat, Rice (Context from App)"
-          }
-        });
-
-        final streamedResponse = await request.send();
-
-        if (streamedResponse.statusCode == 200) {
-          return await streamedResponse.stream.bytesToString();
+        
+        // Real Weather Data
+        Map<String, dynamic> weatherData = {"condition": "Unknown", "temp": "--"};
+        if (position != null) {
+           try {
+             weatherData = await _weatherService.getWeather(position.latitude, position.longitude);
+           } catch (e) {
+             print("Weather Error: $e");
+           }
         } else {
-          throw Exception("Backend ${streamedResponse.statusCode}");
+             // Fallback Weather if no position
+             weatherData = {"condition": "Sunny", "temp": "25C (Est)"};
         }
+        
+        final locationInfo = position != null ? "${position.latitude}, ${position.longitude}" : "Dehradun (Default)";
+
+        // Build Context Map
+        final contextData = {
+          "soil": soilData, // Now guaranteed non-null
+          "weather": weatherData,
+          "location": locationInfo
+        };
+
+        // Direct Call to Gemini
+        return await _onlineService.getAdvice(prompt, contextData: contextData);
   }
 
   Future<Position?> _getCurrentLocation() async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/splash_screen.dart';
 import 'utils/constants.dart';
 import 'services/supabase_service.dart';
@@ -19,15 +20,38 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  
+  // Security: Load Env
+  try {
+    await dotenv.load(fileName: "assets/.env");
+  } catch (e) {
+    print("Warning: .env not found. Security functions may fail.");
+  }
+
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    print("Warning: Firebase Init Failed ($e). App continues.");
+  }
   
   // Set background handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  try {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (_) {}
 
-  await SupabaseService.initialize(); // Initialize Supabase
+  // Initialize Supabase (Safe Mode)
+  try {
+    await SupabaseService.initialize(); 
+  } catch (e) {
+    print("Warning: Supabase init failed ($e). App will run in offline mode.");
+  }
   
-  // Init Notifications
-  await NotificationService().initialize();
+  // Init Notifications (Fire-and-forget, don't await/block main thread)
+  NotificationService().initialize().then((_) {
+    print("Notification Service: Initialized");
+  }).catchError((e) {
+    print("Notification Service: Init Warning ($e)");
+  });
 
   runApp(const BeejXApp());
 }

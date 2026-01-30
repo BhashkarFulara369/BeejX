@@ -17,17 +17,29 @@ class SoilService {
     String? currentCity;
     String locationName = "Unknown Location";
 
+    // FORCE REFRESH: Don't load cache immediately. Try fresh first.
     try {
       // 1. Check Permissions & Get Location
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return await _loadOfflineData();
+        if (permission == LocationPermission.denied) {
+           print("SoilService: Location Permission Denied (User rejected or OS auto-denied).");
+           var off = await _loadOfflineData();
+           if(off != null) off['description'] = "[Permission Denied] Enable Location for live data.\n${off['description'] ?? ''}";
+           return off;
+        }
       }
-      if (permission == LocationPermission.deniedForever) return await _loadOfflineData();
+      if (permission == LocationPermission.deniedForever) {
+           print("SoilService: Location Permission Denied Forever.");
+           var off = await _loadOfflineData();
+           if(off != null) off['description'] = "[Permission Blocked] Open Settings > Permissions.\n${off['description'] ?? ''}";
+           return off;
+      }
 
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high
+        desiredAccuracy: LocationAccuracy.medium, // Changed from high (High hangs in indoors/hills)
+        timeLimit: const Duration(seconds: 10) // Timeout to prevent infinite hang
       );
 
       // 2. Get Address (Reverse Geocoding)
@@ -38,8 +50,8 @@ class SoilService {
         );
         if (placemarks.isNotEmpty) {
           final place = placemarks.first;
-          currentCity = place.locality; // e.g., Dehradun
-          currentState = place.administrativeArea; // e.g., Uttarakhand
+          currentCity = place.locality; 
+          currentState = place.administrativeArea; 
           locationName = "${place.locality}, ${place.administrativeArea}";
         }
       } catch (e) {
@@ -56,19 +68,29 @@ class SoilService {
           'depth': '0-5cm',
           'value': 'mean', 
         },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 20),
+          sendTimeout: const Duration(seconds: 20),
+        ),
       );
 
       if (response.statusCode == 200) {
         final soilData = _parseSoilData(response.data, locationName);
-        await _saveOfflineData(soilData); // Save for offline use
+        await _saveOfflineData(soilData); // Save new fresh data
         return soilData;
       } else {
+        // Only load offline if network fails
         return await _loadOfflineData(state: currentState, city: currentCity);
       }
 
     } catch (e) {
       print("Error getting soil info: $e");
-      return await _loadOfflineData(state: currentState, city: currentCity);
+      // DEBUG: Pass error to UI to help user diagnose
+      var offlineParams = await _loadOfflineData(state: currentState, city: currentCity);
+      if (offlineParams != null) {
+         offlineParams['description'] = "[DEBUG: API Failed] $e\n" + (offlineParams['description'] ?? "");
+      }
+      return offlineParams;
     }
   }
 

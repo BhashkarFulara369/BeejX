@@ -10,8 +10,10 @@ import '../screens/settings_screen.dart';
 import '../screens/voice_session_overlay.dart';
 import '../screens/disease_detection_screen.dart';
 import '../screens/lekha_screen.dart';
+import '../screens/offline_chat_screen.dart';
+import '../screens/bijuka_screen.dart';
 
-import '../main.dart'; // Import for themeNotifier
+import '../main.dart';
 
 class PremiumDrawer extends StatelessWidget {
   const PremiumDrawer({super.key});
@@ -27,7 +29,6 @@ class PremiumDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // User Profile Section
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Row(
@@ -72,7 +73,6 @@ class PremiumDrawer extends StatelessWidget {
             ),
             const Divider(height: 1),
             
-            // Navigation Items
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -82,6 +82,20 @@ class PremiumDrawer extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(builder: (_) => const ChatScreen()),
+                    );
+                  }),
+                  _buildDrawerItem(context, Icons.sd_storage, "Offline BeejX", () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const OfflineChatScreen()),
+                    );
+                  }),
+                  _buildDrawerItem(context, Icons.sensors, "Bijuka", () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BijukaScreen()),
                     );
                   }),
                   _buildDrawerItem(context, Icons.mic, "Samvaad (संवाद)", () {
@@ -121,7 +135,6 @@ class PremiumDrawer extends StatelessWidget {
 
             const Divider(),
 
-            // Theme Toggle (Google Code Wiki Style)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
@@ -146,7 +159,6 @@ class PremiumDrawer extends StatelessWidget {
               ),
             ),
 
-            // Sign Out Button
             _buildDrawerItem(context, Icons.logout, "Sign Out", () async {
               await authService.signOut();
               if (context.mounted) {

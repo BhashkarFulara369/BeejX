@@ -32,6 +32,12 @@ android {
         targetSdk = 35 // Updated to 35 for Play Store Compliance (Dec 2025)
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        ndk {
+            abiFilters.add("armeabi-v7a")
+            abiFilters.add("arm64-v8a")
+            abiFilters.add("x86_64")
+        }
     }
 
     signingConfigs {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppColors {
   // Organic Modern Palette
@@ -41,7 +42,7 @@ class ApiConstants {
   // For Android Emulator use 10.0.2.2
   // For Physical Device use 192.168.1.6 (PC LAN IP)
   // USE THIS FLAG TO OVERRIDE: flutter run --dart-define=API_URL=https://your-url.com
-  static const String baseUrl = String.fromEnvironment('API_URL', defaultValue: 'http://192.168.1.6:8000'); 
+  static const String baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://beejx-brainb.onrender.com'); 
   
   static const String chatEndpoint = '$baseUrl/api/v1/chat';
   static const String schemesDiscoveryEndpoint = '$baseUrl/api/v1/schemes/discover';
@@ -50,5 +51,5 @@ class ApiConstants {
   
   // Supabase Config
   static const String supabaseUrl = 'https://kqqlrxtimamsuodhsevt.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxcWxyeHRpbWFtc3VvZGhzZXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMTI0OTUsImV4cCI6MjA4MDc4ODQ5NX0.o0tPkw8STEkiUsLvTGGZHfblqfGx3zQzizNd4rTrIRA';
+  static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
 }

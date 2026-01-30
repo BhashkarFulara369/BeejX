@@ -9,7 +9,6 @@ import 'package:uuid/uuid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/llm_service.dart';
-import '../services/bhashini_service.dart';
 import '../services/network_service.dart';
 import '../services/soil_service.dart';
 import '../services/database_helper.dart';
@@ -17,6 +16,7 @@ import '../services/supabase_service.dart';
 import '../services/model_manager.dart'; // Import Model Manager
 import '../widgets/premium_drawer.dart';
 import 'voice_session_overlay.dart';
+import 'offline_chat_screen.dart';
 import '../utils/constants.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -32,7 +32,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final LLMService _llmService = LLMService();
-  final BhashiniService _bhashiniService = BhashiniService();
   final NetworkService _networkService = NetworkService();
   final SoilService _soilService = SoilService();
   final SupabaseService _supabaseService = SupabaseService();
@@ -81,6 +80,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Check availability of models on startup
     _checkModelAvailability();
+    
+    // Auto-Trigger Soil Localization (UX Fix)
+    // We delay slightly to let UI build, though init is fine for async calls
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       _loadSoilInfo();
+    });
   }
   
   void _initMode() async {
@@ -102,12 +107,12 @@ class _ChatScreenState extends State<ChatScreen> {
      bool isOffline = await _networkService.checkOffline();
      setState(() {
         _isDeviceOffline = isOffline;
-        // Optionally update _isOfflineMode if strictly following network
      });
+     // REMOVED: Noisy "Back Online" toast on init. 
+     // Only show if user explicitly requested a refresh or if state changes (handled by listener).
      if (isOffline) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("You are currently enabled on Offline Mode")));
-     } else {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Back Online!")));
+       // We can keep this if it helps, but generally the red banner is enough
+       // ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("You are currently enabled on Offline Mode")));
      }
   }
 
@@ -125,23 +130,45 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         setState(() {
           _isDeviceOffline = offline;
-          // Auto-switch ONLY if we lost connection and were in Cloud mode
-          if (offline && !_isOfflineMode) {
+          
+          if (offline) {
+             // Lost Connection -> Go to Offline Screen
+             // We check mounted to avoid calling standard snackbar if traversing
              ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(content: Text("Connection lost. Switching to Offline Mode.")),
+               const SnackBar(content: Text("⚠️ Connection lost. Switching to Offline Brain Screen.")),
              );
-             _isOfflineMode = true;
+             // Full Screen Switch
+             Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const OfflineChatScreen())
+             );
+          } else {
+             // Connection Restored -> Go Online
+             if (_isOfflineMode) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("☁️ You are back Online! Switched to Cloud Mode."), backgroundColor: Colors.green),
+                );
+                _isOfflineMode = false;
+             }
           }
         });
       }
     });
   }
 
+  bool _isSoilLoading = false; // UX Enhancement
+
   void _loadSoilInfo() async {
+    setState(() => _isSoilLoading = true);
     final info = await _soilService.getSoilInfo();
-    if (mounted && info != null) {
+    if (mounted) {
+      final hasData = info != null;
       setState(() {
         _soilData = info;
+        _isSoilLoading = false;
+        if (hasData) {
+          // Auto-expand if previously collapsed to show the new data
+         _showSoilHeader = true; 
+        }
       });
     }
   }
@@ -424,54 +451,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ],
                   ),
-                  child: _soilData == null 
-                      ? Row( 
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.touch_app, color: Colors.white, size: 24),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              child: Text(
-                                "Tap to Localize Soil & Farm Data",
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on, color: Colors.white, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _soilData?['location'] ?? "Locating...",
-                                  style: GoogleFonts.outfit(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildSoilStat("Type", _soilData?['soil_type'] ?? "--"),
-                                _buildSoilStat("pH", _soilData?['ph'] ?? "--"),
-                                _buildSoilStat("Nitrogen", "${_soilData?['nitrogen'] ?? '--'} g/kg"),
-                                _buildSoilStat("Clay", "${_soilData?['clay'] ?? '--'}%"),
-                              ],
-                            ),
-                          ],
-                        ),
+                  child: _buildSoilHeaderContent(), 
                 ),
               ),
             ),
@@ -487,20 +467,24 @@ class _ChatScreenState extends State<ChatScreen> {
                 final messages = snapshot.data!;
                 
                 if (messages.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.spa, size: 48, color: Colors.green),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Namaste! I am BeejX.\n\nAsk me about crops, weather, and mandi prices.",
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.green),
+                  if (messages.isEmpty) {
+                    return Center(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.spa, size: 48, color: Colors.green),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Namaste! I am BeejX.\n\nAsk me about crops, weather, and mandi prices.",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.green),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  );
+                      ),
+                    );
+                  }
                 }
 
                 return ListView.builder(
@@ -682,6 +666,89 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildSoilHeaderContent() {
+      if (_isSoilLoading) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20, 
+              height: 20, 
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Loading Your Soil Data",
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                letterSpacing: 0.5
+              ),
+            ).animate(onPlay: (c) => c.repeat())
+             .shimmer(duration: 1200.ms, color: Colors.white70)
+          ],
+        );
+      }
+
+      if (_soilData == null) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.satellite_alt, color: Colors.white, size: 24)
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .moveY(begin: 0, end: -3, duration: 1000.ms), // Subtle float effect
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                "Tap to Analyze Soil & Location",
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      }
+
+      // Success State
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_on, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  _soilData?['location'] ?? "Locating...",
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSoilStat("Type", _soilData?['soil_type'] ?? "--"),
+              _buildSoilStat("pH", _soilData?['ph'] ?? "--"),
+              _buildSoilStat("Nitrogen", "${_soilData?['nitrogen'] ?? '--'} g/kg"),
+              _buildSoilStat("Clay", "${_soilData?['texture']?['clay'] ?? '--'}%"),
+            ],
+          ),
+        ],
+      ).animate().fadeIn();
   }
 
   Widget _buildSoilStat(String label, String value) {
