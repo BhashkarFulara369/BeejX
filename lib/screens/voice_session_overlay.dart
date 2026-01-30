@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:audioplayers/audioplayers.dart';
-import '../services/bhashini_service.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/llm_service.dart';
 
 class VoiceSessionOverlay extends StatefulWidget {
@@ -19,239 +19,205 @@ class VoiceSessionOverlay extends StatefulWidget {
 }
 
 class _VoiceSessionOverlayState extends State<VoiceSessionOverlay> {
-  final BhashiniService _bhashiniService = BhashiniService();
-  final LLMService _llmService = LLMService(); // Replaces direct LocalRAGService
-  final AudioRecorder _audioRecorder = AudioRecorder();
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  final LLMService _llmService = LLMService();
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _flutterTts = FlutterTts();
   
-  String _status = "Tap to Speak"; // Initial state
-  bool _isRecording = false;
+  String _status = "Initializing...";
+  bool _isListening = false;
   bool _isProcessing = false;
-  bool _isPlaying = false;
+  bool _isSpeaking = false;
   
-  String? _recognizedText;
-  String? _translatedText;
-  late String _voiceSessionId; // Maintain context for this session
+  String _recognizedText = "Tap the mic to speak";
+  String? _aiResponseText;
+  late String _sessionId;
 
   @override
   void initState() {
     super.initState();
-    _voiceSessionId = DateTime.now().millisecondsSinceEpoch.toString(); // Simple ID
-    _initBhashini();
+    _sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    _initVoiceServices();
   }
 
-  void _initBhashini() async {
-    try {
-      await _bhashiniService.initialize();
-      // Play Namaste Greeting
-      await _playNamaste();
-    } catch (e) {
-      debugPrint("Error initializing Bhashini: $e");
-      if(mounted) setState(() => _status = "Error initializing");
+  void _initVoiceServices() async {
+    // 1. Request Permissions
+    var status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      if(mounted) setState(() => _status = "Mic Permission Denied");
+      return;
+    }
+
+    // 2. Init STT
+    bool available = await _speech.initialize(
+      onStatus: (val) => _onSpeechStatus(val),
+      onError: (val) => _onSpeechError(val),
+    );
+
+    // 3. Init TTS
+    await _flutterTts.setLanguage("hi-IN"); // Default to Hindi
+    await _flutterTts.setPitch(1.0);
+    await _flutterTts.setSpeechRate(0.5); // Slower for clarity
+    
+    _flutterTts.setCompletionHandler(() {
+       if(mounted) {
+         setState(() {
+           _isSpeaking = false;
+           _status = "Tap to Reply";
+         });
+         // If we just finished the greeting, auto-listen?
+         // User flow: App speaks greeting -> Users listens -> Users speaks.
+         // Let's safe bet: Let user tap OR auto-listen if it was the greeting.
+         // For now, simple state reset.
+       }
+    });
+
+    if (available && mounted) {
+      setState(() => _status = "Ready");
+      _greetUser();
+    } else {
+      if(mounted) setState(() => _status = "Voice Engine Failed");
     }
   }
 
-  Future<void> _playNamaste() async {
-    if(!mounted) return;
-    setState(() => _status = "Namaste!");
+  void _onSpeechStatus(String status) {
+    print('STT Status: $status');
+    if (status == 'notListening' && _isListening) {
+      if(mounted) setState(() => _isListening = false);
+    }
+  }
+
+  void _onSpeechError(dynamic error) {
+    print('STT Error: $error');
+    if(mounted) {
+      setState(() {
+        _isListening = false;
+        _status = "Error: Try Again";
+      });
+    }
+  }
+
+  Future<void> _greetUser() async {
+    // Specific Hindi Greeting requested by User
+    const greeting = "नमस्ते! बीज एक्स में आपका स्वागत है। पूछिए, आप क्या पूछना चाहते हैं?";
+    await _speak(greeting);
     
-    // Hindi Greeting 
-    final audioContent = await _bhashiniService.generateTTS(
-      "नमस्ते! बीज एक्स में आपका स्वागत है। पूछिए, क्या पूछना है?", 
-      'hi'
+    // Auto-start listening after greeting finishes
+    // Note: _speak sets _isSpeaking=true, acts async. 
+    // We rely on completion handler to reset state, but for smoother UX we can trigger listen here.
+  }
+
+  Future<void> _speak(String text) async {
+    if(text.isEmpty) return;
+    
+    // Force Hindi voice for the greeting to sound natural
+    // For other text, try auto-detect or default to Hindi as it's an Agri app
+    await _flutterTts.setLanguage("hi-IN"); 
+    
+    if(mounted) {
+      setState(() {
+        _isSpeaking = true;
+        _status = "Speaking...";
+      });
+    }
+    await _flutterTts.speak(text);
+  }
+
+  String _cleanTextForSpeech(String text) {
+    // Remove Markdown (*, #, _, -)
+    // Replace **bold** with just bold
+    return text.replaceAll('*', '')
+               .replaceAll('#', '')
+               .replaceAll('_', '')
+               .replaceAll('-', '')
+               .replaceAll('`', '');
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isProcessing || _isSpeaking) {
+      await _flutterTts.stop();
+      if(mounted) setState(() => _isSpeaking = false);
+      return;
+    }
+
+    if (_isListening) {
+      _speech.stop();
+      if(mounted) setState(() => _isListening = false);
+    } else {
+      await _startListening();
+    }
+  }
+
+  Future<void> _startListening() async {
+    if(mounted) {
+      setState(() {
+        _isListening = true;
+        _status = "Listening...";
+        _recognizedText = ""; 
+        _aiResponseText = null;
+      });
+    }
+
+    await _speech.listen(
+      onResult: (val) {
+        if(mounted) {
+          setState(() {
+            _recognizedText = val.recognizedWords;
+          });
+          
+          if (val.finalResult) {
+             _processQuery(val.recognizedWords);
+          }
+        }
+      },
+      localeId: "hi_IN", // Priorities Hindi input
+      listenFor: const Duration(seconds: 10),
+      pauseFor: const Duration(seconds: 3),
+      cancelOnError: true,
+      listenMode: stt.ListenMode.search, // Better for queries
     );
+  }
+
+  Future<void> _processQuery(String query) async {
+    if (query.trim().isEmpty) return;
     
-    if (audioContent != null && mounted) {
-      await _playResponse(audioContent);
+    if(mounted) {
+      setState(() {
+        _isListening = false;
+        _isProcessing = true;
+        _status = "Asking BeejX Brain...";
+      });
+    }
+
+    try {
+      // Call Backend (Gemini)
+      // isOfflineMode = false (Maximize Quality)
+      final response = await _llmService.generateResponse(
+        query, 
+        false, 
+        chatId: _sessionId
+      );
+
+        setState(() {
+          _isProcessing = false;
+          _aiResponseText = response;
+          _status = "Answer Ready";
+        });
+        await _speak(_cleanTextForSpeech(response));
+    } catch (e) {
+      if(mounted) {
+        setState(() {
+           _isProcessing = false;
+           _status = "Error: $e";
+        });
+      }
     }
   }
 
   @override
   void dispose() {
-    _audioRecorder.dispose();
-    _audioPlayer.dispose();
+    _speech.cancel();
+    _flutterTts.stop();
     super.dispose();
-  }
-
-  Future<void> _toggleRecording() async {
-    if (_isProcessing || _isPlaying) return;
-
-    if (_isRecording) {
-      await _stopRecording();
-    } else {
-      await _startRecording();
-    }
-  }
-
-  Future<void> _startRecording() async {
-    try {
-      if (await _audioRecorder.hasPermission()) {
-        final directory = await getTemporaryDirectory();
-        final path = '${directory.path}/bhashini_audio.wav';
-        
-        await _audioRecorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.wav,
-            sampleRate: 16000,
-            numChannels: 1,
-          ), 
-          path: path
-        );
-        
-        setState(() {
-          _isRecording = true;
-          _status = "Listening...";
-          _recognizedText = null;
-          _translatedText = null;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error starting recording: $e");
-      setState(() => _status = "Error recording");
-    }
-  }
-
-  Future<void> _stopRecording() async {
-    try {
-      final path = await _audioRecorder.stop();
-      setState(() {
-        _isRecording = false;
-        _status = "Processing...";
-        _isProcessing = true;
-      });
-
-      if (path != null) {
-        await _processAudio(path);
-      }
-    } catch (e) {
-      debugPrint("Error stopping recording: $e");
-      setState(() {
-        _status = "Error stopping";
-        _isProcessing = false;
-      });
-    }
-  }
-
-  Future<void> _processAudio(String path) async {
-    try {
-      final file = File(path);
-      final bytes = await file.readAsBytes();
-      final base64Audio = base64Encode(bytes);
-
-      setState(() => _status = "Identifying Language...");
-      
-      // 1. Detect Language
-      String sourceLang = 'en'; // Default
-      final detectedLang = await _bhashiniService.detectLanguage(base64Audio);
-      
-      if (detectedLang != null && detectedLang != 'unknown') {
-        sourceLang = detectedLang;
-        setState(() => _status = "Detected: $sourceLang. Processing...");
-      } else {
-        sourceLang = 'en'; // Explicit fallback
-        setState(() => _status = "Language Unknown. Using English...");
-      }
-
-      // 2. Determine Target Language (Multilingual Mode)
-      // Answer in the SAME language the user spoke.
-      String targetLang = sourceLang; 
-
-      // 3. Compute (ASR + Translation + TTS)
-      // We mainly need ASR here. 
-      final response = await _bhashiniService.compute(
-        sourceLanguage: sourceLang,
-        targetLanguage: targetLang, // Echo back for ASR accuracy
-        audioBase64: base64Audio,
-      );
-
-      final pipelineResponse = response['pipelineResponse'];
-      
-      // Parse Response
-      String? asrOutput;
-      String? translationOutput;
-      String? ttsAudioContent;
-
-      if (pipelineResponse != null && pipelineResponse.isNotEmpty) {
-        // ASR
-        if (pipelineResponse.length > 0) {
-           asrOutput = pipelineResponse[0]['output']?[0]['source'];
-        }
-      }
-
-      // --- SMART ONLINE VOICE AGENT (Gemini) ---
-      if (asrOutput != null) {
-        setState(() => _status = "Asking Gemini ($sourceLang)...");
-        
-        // Use Online Backend (Gemini) which now has Soil/Weather Context
-        // Pass 'false' for isOffline.
-        final aiResponse = await _llmService.generateResponse(
-          asrOutput, 
-          false, 
-          chatId: _voiceSessionId // Maintain History!
-        ); 
-        
-        print("Gemini Voice Answer: $aiResponse");
-
-        setState(() {
-          _recognizedText = asrOutput;
-          _translatedText = aiResponse; 
-          _status = "Speaking Answer...";
-        });
-
-        // Generate TTS for the AI Answer in the SAME language
-        ttsAudioContent = await _bhashiniService.generateTTS(aiResponse, targetLang);
-      }
-      // ---------------------------------------------
-
-      setState(() {
-        _recognizedText = asrOutput;
-        if (_translatedText == null) _translatedText = translationOutput; // Only if RAG didn't overwrite
-        _status = (_translatedText != null) ? "Speaking..." : "Finished";
-        _isProcessing = false;
-      });
-
-      if (ttsAudioContent != null) {
-        await _playResponse(ttsAudioContent);
-      } else {
-        setState(() => _status = "Tap to Speak");
-      }
-
-    } catch (e) {
-      debugPrint("Error processing audio: $e");
-      setState(() {
-        _status = "Error: $e";
-         _isProcessing = false;
-      });
-    }
-  }
-
-  Future<void> _playResponse(String base64Audio) async {
-    try {
-      final bytes = base64Decode(base64Audio);
-      // Currently AudioPlayers might not support playing bytes directly easily without a file or specialized source
-      // So we write to file
-      final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/bhashini_response.wav';
-      await File(path).writeAsBytes(bytes);
-
-      setState(() => _isPlaying = true);
-      await _audioPlayer.play(DeviceFileSource(path));
-      
-      _audioPlayer.onPlayerComplete.listen((event) {
-        if (mounted) {
-          setState(() {
-            _isPlaying = false;
-            _status = "Tap to Speak";
-          });
-        }
-      });
-    } catch (e) {
-      debugPrint("Error playing audio: $e");
-      setState(() {
-         _status = "Error playing";
-         _isPlaying = false;
-      });
-    }
   }
 
   @override
@@ -273,84 +239,94 @@ class _VoiceSessionOverlayState extends State<VoiceSessionOverlay> {
             
             // Main Content
             Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Text Display
-                  if (_recognizedText != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Text(
-                        _recognizedText!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16),
-                      ),
-                    ),
-                  
-                  if (_translatedText != null) ...[
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Text(
-                        _translatedText!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.outfit(
-                          color: Colors.greenAccent, 
-                          fontSize: 20, 
-                          fontWeight: FontWeight.w600
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Mic Animation / Button
+                    GestureDetector(
+                      onTap: _toggleListening,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isListening ? Colors.redAccent : (_isSpeaking ? Colors.green : Colors.blueAccent),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_isListening ? Colors.red : Colors.blue).withOpacity(0.5),
+                              blurRadius: _isListening || _isSpeaking ? 50 : 20,
+                              spreadRadius: _isListening || _isSpeaking ? 10 : 5,
+                            ),
+                          ],
                         ),
+                        child: Icon(
+                          _isListening ? Icons.mic : (_isSpeaking ? Icons.volume_up : Icons.mic_none),
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      )
+                      .animate(target: _isListening ? 1 : 0)
+                      .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 600.ms, curve: Curves.easeInOut)
+                      .then(delay: 0.ms).scale(begin: const Offset(1.2, 1.2), end: const Offset(1, 1)),
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Recognized Text (User)
+                    Text(
+                      _recognizedText,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70, 
+                        fontSize: 22,
+                        fontWeight: FontWeight.w300
                       ),
                     ),
-                  ],
 
-                  const SizedBox(height: 40),
+                    const SizedBox(height: 20),
 
-                  // Glowing Orb / Mic Button
-                  GestureDetector(
-                    onTap: _toggleRecording,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _isRecording ? Colors.redAccent : (_isPlaying ? Colors.green : Colors.white),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (_isRecording ? Colors.red : Colors.blue).withOpacity(0.5),
-                            blurRadius: _isRecording || _isPlaying ? 50 : 30,
-                            spreadRadius: _isRecording || _isPlaying ? 20 : 10,
+                    // AI Response
+                    if (_aiResponseText != null)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white24)
+                        ),
+                        child: Text(
+                          _aiResponseText!,
+                          textAlign: TextAlign.center,
+                          maxLines: 5,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            color: Colors.greenAccent, 
+                            fontSize: 18, 
+                            fontWeight: FontWeight.w500
                           ),
-                        ],
+                        ),
+                      ).animate().fadeIn().slideY(begin: 0.2, end: 0),
+
+                    const SizedBox(height: 40),
+
+                    // Status
+                    Text(
+                      _status,
+                      style: GoogleFonts.outfit(
+                         color: Colors.white54,
+                         fontSize: 16
                       ),
-                      child: Icon(
-                        _isRecording ? Icons.stop : (_isPlaying ? Icons.volume_up : Icons.mic),
-                        size: 50,
-                        color: _isRecording || _isPlaying ? Colors.white : Colors.black,
-                      ),
-                    )
-                    .animate(target: _isProcessing ? 1 : 0)
-                    .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1000.ms, curve: Curves.easeInOut)
-                    .then(delay: 0.ms).scale(begin: const Offset(1.1, 1.1), end: const Offset(1, 1)),
-                  ),
-                  
-                  const SizedBox(height: 60),
-                  
-                  // Status Text
-                  Text(
-                    _status,
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w300,
                     ),
-                  ).animate().fadeIn(duration: 500.ms),
-                  
-                  if (_isProcessing)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 20),
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                ],
+                    
+                    if (_isProcessing)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: LinearProgressIndicator(color: Colors.greenAccent),
+                      )
+                  ],
+                ),
               ),
             ),
           ],

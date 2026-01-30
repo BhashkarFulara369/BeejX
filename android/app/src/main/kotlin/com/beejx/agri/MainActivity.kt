@@ -19,6 +19,11 @@ class MainActivity: FlutterActivity() {
                 val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
                 activityManager.getMemoryInfo(memoryInfo)
                 result.success(memoryInfo.totalMem)
+            } else if (call.method == "getAvailableMemory") {
+                val memoryInfo = ActivityManager.MemoryInfo()
+                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                activityManager.getMemoryInfo(memoryInfo)
+                result.success(memoryInfo.availMem)
             } else {
                 result.notImplemented()
             }

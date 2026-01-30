@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:convert';
-import 'dart:typed_data'; // For Int64List
+import 'dart:typed_data'; 
 import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -21,9 +21,9 @@ class WordPieceTokenizer {
       for (int i = 0; i < lines.length; i++) {
         vocab[lines[i]] = i;
       }
-      print("✅ Loaded ${vocab.length} tokens.");
+      print(" Loaded ${vocab.length} tokens.");
     } else {
-      print("❌ Vocab file not found at $vocabPath");
+      print(" Vocab file not found at $vocabPath");
     }
   }
 

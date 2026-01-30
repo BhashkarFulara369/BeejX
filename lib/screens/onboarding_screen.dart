@@ -71,7 +71,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 itemBuilder: (context, index) => OnboardingContent(
                   title: _onboardingData[index]['title']!,
                   desc: _onboardingData[index]['desc']!,
-                  icon: _onboardingData[index]['icon']!,
+                  imagePath: _onboardingData[index]['image']!,
                 ),
               ),
             ),
@@ -121,13 +121,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class OnboardingContent extends StatelessWidget {
   final String title;
   final String desc;
-  final IconData icon;
+  final String imagePath;
 
   const OnboardingContent({
     super.key,
     required this.title,
     required this.desc,
-    required this.icon,
+    required this.imagePath,
   });
 
   @override
@@ -138,19 +138,13 @@ class OnboardingContent extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            height: 200,
-            width: 200,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Icon(
-                icon,
-                size: 80,
-                color: AppColors.primary,
-              ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
-            ),
+            height: 300, 
+            width: double.infinity,
+            alignment: Alignment.center,
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.contain,
+            ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
           ),
           const SizedBox(height: 40),
           Text(

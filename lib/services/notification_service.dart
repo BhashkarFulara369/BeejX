@@ -5,37 +5,46 @@ class NotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
   Future<void> initialize() async {
-    // 1. Request Permission (Critical for Android 13+)
-    final settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-    
-    debugPrint('User granted permission: ${settings.authorizationStatus}');
+    try {
+      // 1. Request Permission (Critical for Android 13+)
+      final settings = await _fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      
+      debugPrint('User granted permission: ${settings.authorizationStatus}');
 
-    // 2. Subscribe to "schemes" topic
-    // This allows sending ONE message to ALL users who are subscribed.
-    await _fcm.subscribeToTopic('schemes');
-    debugPrint("Subscribed to 'schemes' topic");
-
-    // 3. Handle Foreground Messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Got a message whilst in the foreground!');
-      debugPrint('Message data: ${message.data}');
-
-      if (message.notification != null) {
-        debugPrint('Message also contained a notification: ${message.notification}');
-        // Optionally show a local dialog or snackbar here
+      // 2. Subscribe to "schemes" topic
+      // This allows sending ONE message to ALL users who are subscribed.
+      // Wrap in separate try/catch as this needs network
+      try {
+        await _fcm.subscribeToTopic('schemes');
+        debugPrint("Subscribed to 'schemes' topic");
+      } catch (topicError) {
+        debugPrint("Warning: Could not subscribe to topic (Network issue?): $topicError");
       }
-    });
-    
-    // 4. Handle Background/Terminated Tap
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('A new onMessageOpenedApp event was published!');
-      // Navigate to Schemes Screen if needed
-    });
+
+      // 3. Handle Foreground Messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('Got a message whilst in the foreground!');
+        debugPrint('Message data: ${message.data}');
+
+        if (message.notification != null) {
+          debugPrint('Message also contained a notification: ${message.notification}');
+          // Optionally show a local dialog or snackbar here
+        }
+      });
+      
+      // 4. Handle Background/Terminated Tap
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('A new onMessageOpenedApp event was published!');
+        // Navigate to Schemes Screen if needed
+      });
+    } catch (e) {
+      debugPrint("NotificationService Init Failed: $e");
+    }
   }
 
   // Get Token (For testing single device)
