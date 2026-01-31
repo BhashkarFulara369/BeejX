@@ -1,5 +1,4 @@
 
-
 #  BeejX: The Offline AI Ecosystem for Indian Farmers
 
 > **"Digital Agriculture shouldn't stop where the Internet stops."**
@@ -56,8 +55,6 @@ Most Agri-apps look like boring government forms.
 
 ---
 
-## 📸 Screenshots
-*(TBD: Add screenshots of Offline Chat, Bijuka Dashboard, and Disease Scan)*
 
 ## 🔧 How to Run
 1.  **Clone the Repo**:
@@ -85,4 +82,4 @@ Most Agri-apps look like boring government forms.
 *   **Drone Integration**: For aerial disease mapping.
 
 ---
-** me it's me **
+**me it's me**
