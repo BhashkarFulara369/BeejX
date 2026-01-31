@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="assets/icon.png" width="150" alt="BeejX Icon" />
+</p>
 
 #  BeejX: The Offline AI Ecosystem for Indian Farmers
 
